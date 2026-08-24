@@ -1,0 +1,118 @@
+Write ONE single self-contained HTML file: a self-playing 3D AIR HOCKEY GAME that runs the moment the file is opened.
+
+WORK QUICKLY - DO NOT OVERTHINK
+Plan briefly, then write the file. Pick ONE approach and commit to it. Do not weigh alternative rendering strategies at length, do not re-derive the maths several ways, do not draft the program repeatedly before writing it, and do not second-guess decisions you have already made. A clear, complete, working file written promptly is the goal; an exhaustively deliberated one is not. Spend your effort on the code, not on deliberation, and begin writing the file early.
+
+IT MUST LOOK GENUINELY 3D
+The failure mode to avoid above all else is "2.5D" - a flat board seen from above with shapes sliding on it.
+- Use a real PERSPECTIVE projection with a stated field of view of about 50 degrees. Divide by depth. Do NOT use an orthographic, isometric, axonometric or dimetric projection, and do NOT fake depth by merely squashing the scene vertically - those all produce the flat look being rejected.
+- STRONG FORESHORTENING is required: an object at the far end must be drawn noticeably smaller than an identical object at the near end. Screen-size must fall off with distance every frame, computed from the projection - never a constant radius.
+
+CAMERA - A RAISED THREE-QUARTER VIEW THAT SLOWLY ORBITS
+- Place the camera HIGH and OFF ONE CORNER, looking down at the air hockey table from about 35 to 45 degrees above the plane of the table top. This is an elevated three-quarter view, NOT a low view from behind the near edge and NOT a top-down one.
+- Aim it at the centre. The air hockey table must lie DIAGONALLY across the frame, so that one long side and one short side are both clearly visible and the table top reads as a receding parallelogram.
+- THE WHOLE OF THE AIR HOCKEY TABLE MUST BE INSIDE THE FRAME AT ALL TIMES, with a clear margin of empty room on every side. Nothing may ever be cut off by the edge of the canvas. Choose the camera distance so it occupies roughly 70 to 80 percent of the frame, and verify it still fits at every point in the orbit - not just at the start.
+- SLOWLY ORBIT THE CAMERA ALL THE WAY AROUND: a continuous 360 degree yaw at a leisurely pace, one full revolution taking about 45 to 60 seconds, always keeping the same 35 to 45 degree elevation and always framing the whole scene. The motion must be smooth and constant, never jerky and never snapping back. Motion parallax - near objects sweeping across the frame faster than far ones - is the single strongest proof of real 3D.
+- Because the camera goes all the way round, the scene must be correct from EVERY angle: depth sorting has to be recomputed each frame from the current camera position, and nothing may be hard-coded to look right from only one side.
+
+EVERYTHING IS SOLID - NOTHING MAY BE SEE-THROUGH
+Rounded objects must not appear as hollow rings with the floor visible through them, and no dark upright slabs may stand on the playing surface. Obey all of the following.
+- EVERY object is fully OPAQUE. Set globalAlpha back to 1 before drawing any solid geometry, and never leave it lowered after drawing a shadow or highlight. If you are on WebGL, disable blending for solid geometry and enable the depth test.
+- Every rounded object is a FILLED shape. Fill it, then stroke it if you want an outline - never stroke alone. A circle that is only stroked is a transparent ring and is exactly the bug being described. The playing surface must never be visible through an object, and no object may ever be visible through another object.
+- The walls, rails, frame, body, legs and floor are all filled solid too. No wireframes, no outline-only shapes, no unfilled paths anywhere in the render.
+- Use alpha BELOW 1 for exactly three things and nothing else: soft contact shadows, light falloff on the surface, and any deliberate glow. Everything else is fully opaque.
+- NOTHING UNEXPECTED STANDS UP OUT OF THE PLAYING SURFACE. The only things above it are the pieces named in the scene description below. Do not leave stray rectangles, panels or slabs standing on the surface as a side effect of drawing something else. If drawing an inner wall or a recess risks putting a shape on top of the surface, draw it as a dark filled ellipse with a light rim instead.
+- Draw strictly back-to-front by depth (or use the depth buffer). A nearer object overlaps a farther one; near walls overlap objects behind them.
+
+DRAW ORDER - PIECES MUST NEVER VANISH
+Moving pieces must never vanish while only their grey shadows remain on the surface. That is a depth-sorting mistake and it is fatal. Prevent it exactly like this:
+- Draw the STATIC scene FIRST, in this order: room and floor, then the body/cabinet, then the playing surface itself, then the markings painted on that surface.
+- THEN draw the contact shadows.
+- THEN draw the moving pieces, depth-sorted ONLY AMONG THEMSELVES.
+- NEVER put the playing surface, the floor or the cabinet into the same depth sort as the pieces that rest on them. A piece resting on the surface is always drawn after it. If a piece is ever hidden behind the surface it is standing on, your sort is wrong.
+- EVERY moving piece must be drawn on EVERY frame, without exception. There is no condition under which a piece that is in play is skipped. Do not cull anything by depth, by facing direction, by a near/far plane test, or by any other visibility test. If you compute a depth value for sorting, make sure a NaN or a negative value can never cause a piece to be dropped - if in doubt, draw it.
+- A frame in which a shadow appears with no object above it is a bug. Shadows and their objects are drawn from the same position in the same frame.
+
+THE SCENE
+- A neon-lit arcade AIR HOCKEY table standing in a dark room. The playing surface is a bright white low-friction deck, glossy, with the classic markings painted on it: a red centre line across the middle, a large centre circle, and a wide semicircular goal crease arced in front of each goal mouth.
+- The table has a solid dark cabinet body with real thickness, a raised rail running all the way round the deck, and legs reaching the floor. Along the top edge of the side rails runs a continuous NEON LIGHT STRIP - hot magenta down one side, electric cyan down the other - which spills a soft coloured glow onto the white deck and onto the floor beneath the table. This glow is the one place a bloom effect is welcome.
+- At the centre of each short end is a GOAL MOUTH: a rectangular GAP CUT INTO the end rail itself, darker inside than the deck, wide enough for the puck to pass through cleanly. The goal is an ABSENCE of rail, not an added object: there are NO free-standing goal posts, NO uprights, NO bars and NO panels standing anywhere on the deck or on the floor. Nothing is added to make the goal - a section of rail is simply missing.
+- THE RAILS FORM ONE CONTINUOUS FRAME that sits directly on the perimeter of the deck and touches it along its whole length, like a picture frame around the playing surface, broken only by the two goal mouths. A rail must never float above the deck, never detach from it, never drift inward across the playing surface, and never appear as a separate slab lying on the white surface. Build the rails from the same table coordinates as the deck edges so they cannot come apart.
+- The NEON STRIPS sit exactly on top of the rails and follow the rail line precisely. A neon tube must never lie across the playing surface or float in space away from its rail.
+- TWO MALLETS (strikers) and ONE PUCK, and nothing else, sit on the deck. Each mallet is a solid cylinder with a domed knob on top - one glowing red, one glowing blue - drawn as a lit 3D object with a highlight, never as a flat disc. The puck is a low black cylinder, clearly thinner than the mallets are tall, with a lit top face and a visible dark rim so its thickness reads.
+- Every piece casts a soft contact shadow on the white deck, and the mallets and puck are bright enough to separate cleanly from the white surface.
+
+HARD TECHNICAL RULES
+- Everything (HTML, CSS and JavaScript) must live inside that one file. No external dependencies, no CDN links, no libraries, no frameworks - in particular NO three.js, NO cannon.js, NO physics engine of any kind. No web fonts, no external images or audio, no network requests. It must run correctly by double-clicking the file with no internet connection.
+- You may use WebGL directly, or draw the 3D yourself with the Canvas 2D API doing your own projection and your own depth sorting. Either is acceptable. No image assets - every texture, if you use any, must be generated procedurally in code.
+- Get the drawing context with canvas.getContext('webgl') or canvas.getContext('2d') - lowercase.
+- The canvas fills the entire viewport (100vw by 100vh, no scrollbars, no margins) and correctly re-sizes with the window.
+- It runs in a roughly SQUARE pane, about 900 by 900 CSS pixels. Compose for square. All HUD text must be at least 20 CSS pixels tall.
+- Target 60fps with requestAnimationFrame and delta-time based motion. The requestAnimationFrame call that continues the loop must be INSIDE the draw function and must run every frame including after any early return, so the animation can never stop after the first frame.
+
+PLAY - IT MUST PLAY ITSELF
+- No human input is required and none is read: do NOT attach any keyboard, mouse or touch listeners. Two computer players play each other forever and the game loops seamlessly.
+- Each mallet is driven by a simple AI that stays on its OWN HALF of the table and never crosses the centre line. When the puck is coming towards it, the mallet moves to intercept, then drives forward through the puck to strike it. When the puck is at the far end, the mallet retreats to a defensive position in front of its own goal.
+- Move each mallet by steering its VELOCITY towards a target point with a capped acceleration and a capped top speed. Never teleport a mallet, and never set its position directly - it must accelerate and decelerate visibly.
+- The mallet strikes the puck through an ordinary collision: the puck's new velocity comes out of the impact with a moving mallet, so a fast mallet sends the puck away fast. Do not script the puck's path.
+- Give each AI a small reaction delay and a small aiming error so rallies are varied and neither side is perfect. Consecutive shots must send the puck in clearly different directions.
+- When the puck passes fully through a goal mouth, that side concedes: increment the other player's score, briefly pause, then reset the puck to the centre with a small random initial push and play on.
+
+PHYSICS - REAL, NOT SCRIPTED
+- Every moving piece has position, velocity and mass. Nothing is keyframed; every position on screen comes out of the integrator.
+- Friction decelerates every moving piece at a constant rate until it stops.
+- Collisions resolve as impacts along the line of centres, conserving momentum. Two solid objects must never overlap or pass through each other.
+- Wall rebounds leave at the mirrored angle with restitution under 1. Nothing may ever pass through a wall or escape the playing area.
+- NUMERIC GUARD: clamp the frame delta to a maximum of 0.033 seconds before integrating, and clamp every object's speed to a stated maximum, so nothing can travel far enough in one frame to tunnel through a wall or another object.
+- The simulation must never gain energy: if speeds rise over time rather than falling, it is broken.
+- NEVER give an object a random velocity to make the scene look active. If it moves, an impulse moved it.
+- The deck is nearly frictionless, as a real air hockey table is: the puck glides a long way and loses speed only slowly. The mallets, being driven, are not subject to that drift.
+- The puck must rebound cleanly off all four rails and off both mallets, and must never come to a complete stop in open play. If the puck's speed falls below a small threshold for more than 1.5 seconds, have the nearest mallet go and strike it.
+- USE THE WHOLE TABLE. Rallies must run end to end, not stay bunched at one end.
+
+CONTAINMENT AND ANTI-STALL - THE SCENE MUST NEVER LOCK UP
+A moving piece must never pass through a wall, wedge outside the playing surface or stall the scene while only the camera moves. Enforce containment in this exact, literal way:
+- Define the legal area ONCE as explicit numbers, for example halfWidth and halfLength, and give every piece a radius.
+- At the END of every integration step, run an UNCONDITIONAL clamp - a real line of code that executes every frame, not a branch that might be skipped:
+      p.x = Math.max(-halfWidth  + p.r, Math.min(halfWidth  - p.r, p.x));
+      p.z = Math.max(-halfLength + p.r, Math.min(halfLength - p.r, p.z));
+  and when a clamp actually bites, also reflect that component of the velocity and damp it. Reflecting the velocity WITHOUT correcting the position is what lets a piece embed itself in a wall - you must do both, in the same frame.
+- If a piece is legitimately allowed to leave through a goal or a hole, test for that FIRST, handle the score, and reset the piece. Everywhere else the clamp applies with no exception.
+- A piece must NEVER be drawn resting on top of a wall, on a rail, or beyond the edge of the playing surface. If you ever detect that state, put the piece back at its start position that same frame. Do not wait for a timer to notice.
+- WATCHDOG: keep a timer of how long it has been since anything meaningful changed - a score, a reset, or a fresh strike. If NOTHING meaningful has happened for 6 seconds, force a full reset to the starting position and resume play. Also track total movement: if the sum of all piece speeds stays near zero for 1.5 seconds, re-serve immediately.
+- The clip a viewer sees is only 11 seconds long. Any stall over 3 seconds ruins it. Visible action must be continuous from the first frame to the last.
+
+NEVER-STUCK RULE
+- If 15 seconds pass without a goal, nudge the puck towards a goal so the rally resolves. If the puck ever leaves the table through a gap that is not a goal, reset it to the centre. There is never a still frame and never a terminal state.
+
+PRE-EMPT THESE CATASTROPHIC FAILURES
+- Nothing may ever be drawn outside the playing area or leave the canvas.
+- Do NOT let the scene stop when everything comes to rest - the reset rule must always fire.
+- Do NOT draw any panel or overlay across the middle of the playing area.
+- If you use WebGL, you MUST check that shaders compile and the program links, and fall back to something visible rather than a black canvas if they do not. A black pane is the worst possible outcome.
+
+HUD
+- A scoreboard readout at 20 CSS pixels or larger showing BLUE and RED scores, styled as two small rounded neon-outlined boxes, placed clear of the table. That is the whole HUD.
+
+PALETTE
+- Viewed small, dark-on-dark reads as an empty rectangle. Use a mid-tone, high-contrast palette where the moving pieces separate from the background in LIGHTNESS, not only in hue. A white deck, a near-black cabinet, magenta and cyan neon along the rails, a glowing red mallet and a glowing blue mallet, and a black puck with a lit top face.
+- Behind the scene, a simple dark room with a visible floor-to-wall horizon line so the whole thing sits in a space rather than floating on a flat colour.
+
+FINAL SELF-CHECK before you finish - confirm all eight:
+1. The whole scene is inside the frame with margin, at every point of the 360 degree orbit.
+2. Nothing on screen is see-through: no hollow rings, no wireframes, no background visible through a solid object.
+3. Nothing unexpected stands upright on the playing surface.
+4. A still frame could never be mistaken for a top-down 2D diagram.
+5. Every moving piece is drawn on every single frame - never a shadow with nothing above it.
+6. Nothing can escape the playing area, and the watchdog guarantees the scene never stalls.
+7. The subject fills roughly 70 to 80 percent of the frame - not a small object adrift in empty space.
+8. The mallets never cross the centre line and never teleport.
+
+CODE RULES - THE FILE MUST PARSE
+A single unbalanced bracket can make the ENTIRE pane render blank: a JavaScript parse error kills the whole script element, so nothing runs at all - not the animation, not even the error-handling fallback. One stray character can destroy the whole submission. Take this seriously:
+- Before you finish, RE-READ the complete script you have written from top to bottom and check that every bracket, parenthesis and brace opens and closes in the right order. Pay particular attention to long nested calls with array literals and ternaries inside them.
+- Prefer SIMPLE, FLAT statements over deeply nested one-liners. Assign intermediate values to named variables instead of nesting four levels of brackets inside a single call. Shorter, plainer lines are much harder to get wrong, and clarity is worth more here than brevity.
+- Declare every variable before any line that reads it, never reference a let or const above its declaration, never reassign a const, bounds-check every array index, and iterate backwards when removing items from an array mid-loop.
+- Wrap the body of your animation frame in try/catch so one bad frame cannot stop the loop - but understand that this does NOT protect you from a parse error, which happens before any of your code runs. Only correct syntax protects you from that.
+
+Output ONLY the complete HTML file in one code block, nothing else.
